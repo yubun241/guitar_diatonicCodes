@@ -1,0 +1,2 @@
+# guitar_diatonicCodes
+ギターのスケールを可視化するアプリです
