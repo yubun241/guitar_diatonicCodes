@@ -1,10 +1,596 @@
-# リポジトリをクローン
-git clone https://github.com/yubun241/scale-finder.git
-cd scale-finder
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>diatonicMaker</title>
+<meta name="description" content="コードからスケールを探す — ギターフレット図付き">
+<meta name="theme-color" content="#c8902a">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="diatonicMaker">
+<link rel="apple-touch-icon" href="icon-192x192.png">
+<link rel="manifest" href="manifest.json">
 
-# ファイルをコピー（index.html として）
-cp /path/to/scale-finder.html index.html
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&family=Fira+Code:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+:root {
+  --bg:     #09090d;
+  --s1:     #111118;
+  --s2:     #17171f;
+  --s3:     #1e1e28;
+  --border: #252535;
+  --gold:   #c8902a;
+  --gold2:  #e8b84b;
+  --text:   #ddd8cc;
+  --text2:  #7a7570;
+  --dim:    #353535;
+  --red:    #d04040;
+  --radius: 6px;
+}
+body { background:var(--bg); color:var(--text); font-family:'Fira Code',monospace; min-height:100vh; }
+body::after {
+  content:''; position:fixed; inset:0; pointer-events:none; z-index:0;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.7' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.03'/%3E%3C/svg%3E");
+}
+#app { position:relative; z-index:1; max-width:720px; margin:0 auto; padding:28px 16px 80px; }
 
-git add index.html
-git commit -m "Add Scale Finder"
-git push origin main
+/* Header */
+header { text-align:center; margin-bottom:32px; padding-bottom:20px; border-bottom:1px solid var(--border); position:relative; }
+header::after { content:''; position:absolute; bottom:-1px; left:50%; transform:translateX(-50%); width:64px; height:2px; background:var(--gold); }
+h1 { font-family:'Playfair Display',serif; font-size:clamp(2rem,7vw,3rem); color:var(--gold2); letter-spacing:.2em; }
+.sub { margin-top:8px; color:var(--text2); font-size:.65rem; letter-spacing:.25em; }
+
+/* Labels */
+.lbl { font-size:.58rem; letter-spacing:.3em; color:var(--text2); text-transform:uppercase; margin-bottom:10px; display:flex; align-items:center; justify-content:space-between; }
+
+/* Fix notice */
+.fix-note { font-size:.58rem; color:#6a9a60; border:1px solid #3a5a34; background:#141e12; border-radius:var(--radius); padding:10px 14px; margin-bottom:20px; line-height:2; }
+.fix-note b { color:#8acc78; }
+
+/* Quality buttons */
+.qual-section { margin-bottom:20px; }
+.qual-row { display:flex; gap:5px; flex-wrap:wrap; }
+.q-btn {
+  flex:1; min-width:44px; padding:9px 4px; background:var(--s1);
+  border:1px solid var(--border); color:var(--text2); font-family:'Fira Code',monospace;
+  font-size:.72rem; border-radius:var(--radius); cursor:pointer; transition:all .12s; text-align:center; user-select:none;
+}
+.q-btn:hover  { border-color:var(--gold); color:var(--gold); }
+.q-btn.active { background:var(--gold); border-color:var(--gold); color:#09090d; font-weight:600; }
+
+/* Piano */
+.piano-section { margin-bottom:20px; }
+.piano-wrap { overflow-x:auto; -webkit-overflow-scrolling:touch; padding:2px; }
+.piano { position:relative; margin:0 auto; }
+.wkey {
+  position:absolute; bottom:0; background:linear-gradient(180deg,#f5ede0 0%,#e6d9c4 100%);
+  border:1px solid #b0a898; border-top:none; border-radius:0 0 6px 6px; cursor:pointer;
+  display:flex; align-items:flex-end; justify-content:center; padding-bottom:8px;
+  font-weight:600; color:#8a8078; user-select:none; transition:background .08s,box-shadow .08s;
+  box-shadow:0 5px 8px rgba(0,0,0,.5),inset 0 -3px 0 rgba(0,0,0,.08);
+}
+.wkey:hover { background:linear-gradient(180deg,#fffbf0 0%,#f0e4cc 100%); box-shadow:0 5px 18px rgba(200,144,42,.4),inset 0 -3px 0 rgba(0,0,0,.08); }
+.wkey.flash { background:linear-gradient(180deg,#e8b84b 0%,#b87820 100%)!important; color:#fff!important; transition:background 0s; }
+.bkey {
+  position:absolute; top:0; background:linear-gradient(180deg,#2a2835 0%,#0e0e14 100%);
+  border:1px solid #3a3a48; border-top:none; border-radius:0 0 4px 4px; cursor:pointer;
+  display:flex; align-items:flex-end; justify-content:center; padding-bottom:5px;
+  font-weight:400; color:#4a4a5a; user-select:none; z-index:2; transition:background .08s;
+  box-shadow:0 6px 10px rgba(0,0,0,.9),1px 0 0 #111,-1px 0 0 #111,inset 0 1px 0 rgba(255,255,255,.06);
+}
+.bkey:hover { background:linear-gradient(180deg,#3e3848 0%,#222030 100%); box-shadow:0 6px 18px rgba(200,144,42,.35),1px 0 0 #111,-1px 0 0 #111; }
+.bkey.flash { background:linear-gradient(180deg,#e8b84b 0%,#a06818 100%)!important; color:#09090d!important; transition:background 0s; }
+
+/* Chips */
+.chips-section { margin-bottom:20px; }
+.clear-btn { background:none; border:1px solid var(--border); color:var(--text2); font-family:'Fira Code',monospace; font-size:.55rem; letter-spacing:.1em; padding:3px 9px; border-radius:3px; cursor:pointer; transition:all .12s; }
+.clear-btn:hover { border-color:var(--red); color:var(--red); }
+.chips { min-height:52px; background:var(--s1); border:1px solid var(--border); border-radius:var(--radius); padding:12px 14px; display:flex; flex-wrap:wrap; gap:8px; align-items:center; }
+.hint { color:var(--dim); font-size:.72rem; width:100%; text-align:center; }
+.chip { background:var(--s3); border:1px solid var(--gold); color:var(--gold2); padding:5px 12px; border-radius:20px; font-size:.82rem; font-weight:500; display:flex; align-items:center; gap:7px; animation:popIn .15s cubic-bezier(.34,1.56,.64,1); }
+@keyframes popIn { from{opacity:0;transform:scale(.75)} to{opacity:1;transform:scale(1)} }
+.chip-x { cursor:pointer; color:var(--text2); line-height:1; transition:color .1s; }
+.chip-x:hover { color:var(--red); }
+
+/* Results */
+.match-cnt { color:var(--gold); font-size:.62rem; }
+.no-result { text-align:center; color:var(--dim); font-size:.78rem; padding:40px 20px; line-height:2.2; }
+.result-card { background:var(--s1); border:1px solid var(--border); border-left:3px solid var(--gold); border-radius:var(--radius); padding:18px 18px 14px; margin-bottom:10px; animation:slideIn .18s ease; }
+@keyframes slideIn { from{opacity:0;transform:translateY(5px)} to{opacity:1;transform:translateY(0)} }
+.card-title  { font-family:'Playfair Display',serif; font-size:1.1rem; color:var(--gold2); margin-bottom:4px; }
+.card-chords { font-size:.63rem; color:var(--text2); letter-spacing:.04em; margin-bottom:14px; padding-bottom:12px; border-bottom:1px solid var(--border); overflow-x:auto; white-space:nowrap; }
+.card-chords .hl { color:var(--gold); font-weight:700; }
+.scale-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(200px,1fr)); gap:5px; }
+.srow { background:var(--s2); border:1px solid var(--border); border-radius:4px; padding:8px 12px; display:flex; justify-content:space-between; align-items:center; cursor:pointer; transition:border-color .12s,background .12s; user-select:none; }
+.srow:hover  { border-color:var(--gold); background:var(--s3); }
+.srow:active { background:#222230; }
+.srow-name  { font-size:.64rem; color:var(--text2); text-transform:uppercase; letter-spacing:.04em; }
+.srow-iv    { font-size:.51rem; color:var(--dim); margin-top:2px; }
+.srow-root  { font-size:.95rem; font-weight:500; color:var(--gold2); flex-shrink:0; margin-left:8px; }
+.scale-hint { font-size:.55rem; color:var(--dim); text-align:center; margin-top:8px; letter-spacing:.1em; }
+
+/* ── Modal ── */
+#modal { display:none; position:fixed; inset:0; z-index:200; align-items:center; justify-content:center; }
+#modal.open { display:flex; }
+#modal-bg { position:absolute; inset:0; background:rgba(0,0,0,.85); backdrop-filter:blur(4px); cursor:pointer; }
+#modal-box {
+  position:relative; z-index:1; background:var(--s1);
+  border:1px solid var(--border); border-top:3px solid var(--gold);
+  border-radius:10px; padding:20px 18px 18px;
+  max-width:480px; width:calc(100% - 24px);
+  animation:modalIn .18s ease;
+}
+@keyframes modalIn { from{opacity:0;transform:scale(.93)} to{opacity:1;transform:scale(1)} }
+#modal-close { position:absolute; top:12px; right:14px; background:none; border:none; color:var(--text2); font-size:1.2rem; cursor:pointer; padding:4px 8px; transition:color .1s; }
+#modal-close:hover { color:var(--text); }
+#modal-scale-name { font-family:'Playfair Display',serif; font-size:1.1rem; color:var(--gold2); }
+#modal-tuning { font-size:.58rem; color:var(--text2); margin-top:4px; letter-spacing:.06em; }
+
+/* Scrollable fretboard */
+#fretboard-scroll {
+  margin-top:14px;
+  overflow-x:auto;
+  -webkit-overflow-scrolling:touch;
+  cursor:grab;
+  border:1px solid var(--border);
+  border-radius:6px;
+}
+#fretboard-scroll:active { cursor:grabbing; }
+#fretboard-scroll::-webkit-scrollbar { height:4px; }
+#fretboard-scroll::-webkit-scrollbar-track { background:var(--s2); }
+#fretboard-scroll::-webkit-scrollbar-thumb { background:var(--gold); border-radius:2px; }
+#fretboard-scroll svg { display:block; }
+
+/* Legend & scroll hint */
+#modal-legend { display:flex; gap:16px; margin-top:12px; justify-content:center; flex-wrap:wrap; }
+.legend-item  { display:flex; align-items:center; gap:6px; font-size:.6rem; color:var(--text2); }
+.legend-dot   { width:11px; height:11px; border-radius:50%; flex-shrink:0; }
+#modal-scroll-hint { text-align:center; font-size:.57rem; color:var(--dim); margin-top:8px; letter-spacing:.1em; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header>
+    <h1>SCALE FINDER</h1>
+    <p class="sub">コードからスケールを探す</p>
+  </header>
+
+  <div class="fix-note">
+    ✔ <b>Fix:</b> Mixolydian → 第5音（V）起点 &nbsp;|&nbsp; <b>Fix:</b> Harmonic Minor 音程表記 → #5 &nbsp;|&nbsp; <b>Added:</b> V コードを照合プールに追加
+  </div>
+
+  <section class="qual-section">
+    <div class="lbl">CHORD QUALITY — 先に選んでからキーをタップ</div>
+    <div class="qual-row" id="qualRow">
+      <button class="q-btn active" data-q="">M</button>
+      <button class="q-btn" data-q="m">m</button>
+      <button class="q-btn" data-q="dim">dim</button>
+      <button class="q-btn" data-q="7">7</button>
+      <button class="q-btn" data-q="m7">m7</button>
+      <button class="q-btn" data-q="M7">M7</button>
+      <button class="q-btn" data-q="sus2">sus2</button>
+      <button class="q-btn" data-q="sus4">sus4</button>
+    </div>
+  </section>
+
+  <section class="piano-section">
+    <div class="lbl">KEYBOARD</div>
+    <div class="piano-wrap"><div class="piano" id="piano"></div></div>
+  </section>
+
+  <section class="chips-section">
+    <div class="lbl">
+      SELECTED CHORDS
+      <button class="clear-btn" onclick="clearAll()">CLEAR ALL</button>
+    </div>
+    <div class="chips" id="chips">
+      <span class="hint">← Quality を選んでキーをタップしてください</span>
+    </div>
+  </section>
+
+  <section>
+    <div class="lbl">MATCHING SCALES <span class="match-cnt" id="matchCnt"></span></div>
+    <div id="results"><div class="no-result">コードを選択するとスケールが表示されます</div></div>
+  </section>
+</div>
+
+<!-- Fretboard Modal -->
+<div id="modal">
+  <div id="modal-bg" onclick="closeModal()"></div>
+  <div id="modal-box">
+    <button id="modal-close" onclick="closeModal()">x</button>
+    <div id="modal-scale-name"></div>
+    <div id="modal-tuning"></div>
+    <div id="fretboard-scroll">
+      <div id="modal-fretboard"></div>
+    </div>
+    <div id="modal-legend">
+      <div class="legend-item">
+        <div class="legend-dot" style="background:#b82020;border:1.5px solid #e04040"></div>
+        Root
+      </div>
+      <div class="legend-item">
+        <div class="legend-dot" style="background:#1c1c2e;border:1.5px solid #c8902a"></div>
+        Scale note
+      </div>
+    </div>
+    <div id="modal-scroll-hint">← スクロールで全フレットを確認 →</div>
+  </div>
+</div>
+
+<script>
+/* ================================================================
+   CONSTANTS — all sharps, no flats
+   ================================================================ */
+const SN = ['C','C#','D','D#','E','F','F#','G','G#','A','A#','B'];
+
+//                I    ii   iii  IV   V    vi   vii
+const MAJ_IV   = [0,   2,   4,   5,   7,   9,   11];
+const TRIAD_Q  = ['',  'm', 'm', '',  '',  'm', 'dim'];
+const SEV_Q    = ['M7','m7','m7','M7','7', 'm7','m7b5'];
+
+// Flat → Sharp normalization (for user input tolerance)
+const F2S = {Db:'C#',Eb:'D#',Gb:'F#',Ab:'G#',Bb:'A#'};
+function normalize(chord) {
+  return chord.replace(/^([A-G][b])/, s => F2S[s] || s);
+}
+
+/* ================================================================
+   SCALE INTERVALS (semitones from scale root)
+   ================================================================ */
+const SCALE_IV = {
+  'Major':           [0,2,4,5,7,9,11],
+  'Natural Minor':   [0,2,3,5,7,8,10],
+  'Harmonic Minor':  [0,2,3,5,7,8,11],
+  'Melodic Minor #': [0,2,3,5,7,9,11],
+  'Major Pentatonic':[0,2,4,7,9],
+  'Minor Pentatonic':[0,3,5,7,10],
+  'Dorian':          [0,2,3,5,7,9,10],
+  'Phrygian':        [0,1,3,5,7,8,10],
+  'Lydian':          [0,2,4,6,7,9,11],
+  'Mixolydian':      [0,2,4,5,7,9,10],
+  'Locrian':         [0,1,3,5,6,8,10],
+  'Major Blues':     [0,2,3,4,7,9],
+  'Minor Blues':     [0,3,5,6,7,10],
+};
+
+/* ================================================================
+   SCALE TYPE TABLE
+   [name, di, relative-degrees, parent-key-degrees]
+   FIX: Mixolydian di=4 (V) | Harmonic Minor shows #5
+   ================================================================ */
+const SCALES = [
+  ['Major',            0, '1  2  3  4  5  6  7',       '1  2  3  4  5  6  7'    ],
+  ['Natural Minor',    5, '1  2  b3  4  5  b6  b7',    '6  7  1  2  3  4  5'    ],
+  ['Harmonic Minor',   5, '1  2  b3  4  5  b6  #7',    '6  7  1  2  3  4  #5'   ],
+  ['Melodic Minor #',  5, '1  2  b3  4  5  6  7',      '6  7  1  2  3  #4  #5'  ],
+  ['Major Pentatonic', 0, '1  2  3  5  6',             '1  2  3  5  6'          ],
+  ['Minor Pentatonic', 5, '1  b3  4  5  b7',           '6  1  2  3  5'          ],
+  ['Dorian',           1, '1  2  b3  4  5  6  b7',     '2  3  4  5  6  7  1'    ],
+  ['Phrygian',         2, '1  b2  b3  4  5  b6  b7',   '3  4  5  6  7  1  2'    ],
+  ['Lydian',           3, '1  2  3  #4  5  6  7',      '4  5  6  7  1  2  3'    ],
+  ['Mixolydian',       4, '1  2  3  4  5  6  b7',      '5  6  7  1  2  3  4'    ],
+  ['Locrian',          6, '1  b2  b3  4  b5  b6  b7',  '7  1  2  3  4  5  6'    ],
+  ['Major Blues',      0, '1  2  b3  3  5  6',         '1  2  #2  3  5  6'      ],
+  ['Minor Blues',      5, '1  b3  4  b5  5  b7',       '6  1  2  #2  3  5'      ],
+];
+
+/* ================================================================
+   DATABASE — 12 major keys, all sharps
+   ================================================================ */
+const DB = SN.map((_, r) => {
+  const disp = MAJ_IV.map((iv, i) => SN[(r+iv)%12] + TRIAD_Q[i]);
+  const pool = new Set();
+  MAJ_IV.forEach((iv, i) => {
+    const n = SN[(r+iv)%12];
+    pool.add(n + TRIAD_Q[i]);
+    pool.add(n + SEV_Q[i]);
+  });
+  return { key: SN[r]+' Major', disp, matchPool: pool, rootIdx: r };
+});
+
+/* ================================================================
+   GUITAR FRETBOARD — full 22-fret SVG
+   Standard tuning: E A D G B e
+   Display: string 1 (high e) at top, string 6 (E) at bottom
+   ================================================================ */
+//                        E   A   D   G   B   e4
+const OPEN_NOTES   = [4,  9,  2,  7, 11,  4];
+const STRING_NAMES = ['e','B','G','D','A','E']; // top→bottom
+
+function openNoteForRow(row) { return OPEN_NOTES[5 - row]; } // row 0=high e, row 5=low E
+
+function circDot(cx, cy, r, isRoot, noteName) {
+  const fill   = isRoot ? '#b82020' : '#1c1c2e';
+  const stroke = isRoot ? '#e04040' : '#c8902a';
+  const tc     = isRoot ? '#ffe0e0' : '#bcb8a8';
+  const fs     = Math.max(7, Math.round(r * 0.76));
+  const dy     = Math.round(r * 0.34);
+  return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>`
+       + `<text x="${cx}" y="${cy+dy}" text-anchor="middle" fill="${tc}" `
+       + `font-size="${fs}" font-family="Fira Code,monospace" font-weight="600">${noteName}</text>`;
+}
+
+function buildFretboardSVG(scaleName, rootIdx) {
+  const intervals = SCALE_IV[scaleName];
+  if (!intervals) return '';
+  const scaleSet = new Set(intervals.map(iv => (rootIdx + iv) % 12));
+
+  const NF   = 22;   // frets 1–22
+  const NS   = 6;    // strings
+  const cW   = 46;   // cell width (px per fret)
+  const cH   = 36;   // string spacing
+  const ml   = 38;   // left margin (string labels + open circles)
+  const mr   = 14;
+  const mt   = 22;   // top margin (above string 1)
+  const mb   = 22;   // bottom margin (below string 6)
+  const rDot = 13;   // note dot radius
+
+  const W       = ml + NF * cW + mr;
+  const H       = mt + (NS - 1) * cH + mb;
+  const neckTop = mt;
+  const neckBot = mt + (NS - 1) * cH;
+  const neckMid = mt + (NS - 1) * cH / 2;
+
+  let s = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
+  s += `<rect width="${W}" height="${H}" fill="#0d0d14"/>`;
+
+  // Fretboard wood background
+  s += `<rect x="${ml}" y="${neckTop}" width="${NF*cW}" height="${neckBot-neckTop}" fill="#141420" rx="1"/>`;
+
+  // ── Fret inlay markers (before strings/frets so they appear behind) ──
+  const INLAY1 = [3, 5, 7, 9, 15, 17, 19, 21];
+  const INLAY2 = [12];
+  INLAY1.forEach(f => {
+    if (f > NF) return;
+    const x = ml + (f - 0.5) * cW;
+    s += `<circle cx="${x}" cy="${neckMid}" r="5" fill="#232334" opacity="0.9"/>`;
+  });
+  INLAY2.forEach(f => {
+    if (f > NF) return;
+    const x = ml + (f - 0.5) * cW;
+    s += `<circle cx="${x}" cy="${neckMid - cH*1.3}" r="5" fill="#232334" opacity="0.9"/>`;
+    s += `<circle cx="${x}" cy="${neckMid + cH*1.3}" r="5" fill="#232334" opacity="0.9"/>`;
+  });
+
+  // ── Nut (thick gold bar) ──
+  s += `<line x1="${ml}" y1="${neckTop}" x2="${ml}" y2="${neckBot}" stroke="#c8902a" stroke-width="3"/>`;
+
+  // ── Fret bars 1–22 ──
+  for (let f = 1; f <= NF; f++) {
+    const x = ml + f * cW;
+    s += `<line x1="${x}" y1="${neckTop}" x2="${x}" y2="${neckBot}" stroke="#2c2c3c" stroke-width="1"/>`;
+  }
+
+  // ── String lines (6 strings) ──
+  for (let r = 0; r < NS; r++) {
+    const y   = mt + r * cH;
+    const thk = (0.65 + r * 0.28).toFixed(2);
+    s += `<line x1="${ml}" y1="${y}" x2="${ml + NF*cW}" y2="${y}" stroke="#484860" stroke-width="${thk}"/>`;
+  }
+
+  // ── String name labels (left of nut) ──
+  for (let r = 0; r < NS; r++) {
+    const y = mt + r * cH;
+    s += `<text x="${ml-8}" y="${y+4}" text-anchor="end" fill="#404054"
+               font-size="10" font-family="Fira Code,monospace">${STRING_NAMES[r]}</text>`;
+  }
+
+  // ── Fret number labels (at inlay positions, below neck) ──
+  [1, 3, 5, 7, 9, 12, 15, 17, 19, 21].forEach(f => {
+    if (f > NF) return;
+    const x = ml + (f - 0.5) * cW;
+    s += `<text x="${x}" y="${neckBot+16}" text-anchor="middle" fill="#404054"
+               font-size="10" font-family="Fira Code,monospace">${f}</text>`;
+  });
+
+  // ── Note dots ──
+  for (let r = 0; r < NS; r++) {
+    const openNote = openNoteForRow(r);
+    const y        = mt + r * cH;
+
+    // Open string (left of nut)
+    const openIdx = openNote % 12;
+    if (scaleSet.has(openIdx)) {
+      s += circDot(ml - 22, y, rDot - 2, openIdx === rootIdx, SN[openIdx]);
+    }
+
+    // Frets 1–22
+    for (let f = 1; f <= NF; f++) {
+      const noteIdx = (openNote + f) % 12;
+      if (!scaleSet.has(noteIdx)) continue;
+      const cx = ml + (f - 0.5) * cW;
+      s += circDot(cx, y, rDot, noteIdx === rootIdx, SN[noteIdx]);
+    }
+  }
+
+  s += '</svg>';
+  return s;
+}
+
+/* ================================================================
+   PIANO KEYBOARD
+   ================================================================ */
+const WHITE_KEYS = [{n:'C',i:0},{n:'D',i:2},{n:'E',i:4},{n:'F',i:5},{n:'G',i:7},{n:'A',i:9},{n:'B',i:11}];
+const BLACK_KEYS = [{n:'C#',i:1,wp:1},{n:'D#',i:3,wp:2},{n:'F#',i:6,wp:4},{n:'G#',i:8,wp:5},{n:'A#',i:10,wp:6}];
+
+function renderPiano() {
+  const el = document.getElementById('piano');
+  el.innerHTML = '';
+  const W  = Math.min(el.parentElement.offsetWidth - 4, 600);
+  const ww = W / 7, wh = Math.min(ww * 3.5, 165);
+  const bw = ww * 0.64, bh = wh * 0.60;
+  el.style.cssText = `width:${W}px;height:${wh}px`;
+  WHITE_KEYS.forEach((k, i) => {
+    const d = document.createElement('div');
+    d.className = 'wkey';
+    d.style.cssText = `left:${i*ww}px;width:${ww-2}px;height:${wh}px;font-size:${Math.max(8,ww*.17)}px`;
+    d.textContent = k.n;
+    d.addEventListener('click', () => onKey(k.n, d));
+    el.appendChild(d);
+  });
+  BLACK_KEYS.forEach(k => {
+    const d = document.createElement('div');
+    d.className = 'bkey';
+    d.style.cssText = `left:${k.wp*ww-bw/2}px;width:${bw}px;height:${bh}px;font-size:${Math.max(7,ww*.13)}px`;
+    d.textContent = k.n;
+    d.addEventListener('click', e => { e.stopPropagation(); onKey(k.n, d); });
+    el.appendChild(d);
+  });
+}
+
+/* ================================================================
+   STATE
+   ================================================================ */
+let selectedQ      = '';
+let selectedChords = [];
+
+document.getElementById('qualRow').addEventListener('click', e => {
+  const b = e.target.closest('.q-btn');
+  if (!b) return;
+  document.querySelectorAll('.q-btn').forEach(x => x.classList.remove('active'));
+  b.classList.add('active');
+  selectedQ = b.dataset.q;
+});
+
+function onKey(noteName, el) {
+  const chord = noteName + selectedQ;
+  el.classList.add('flash');
+  setTimeout(() => el.classList.remove('flash'), 220);
+  if (!selectedChords.includes(chord)) { selectedChords.push(chord); update(); }
+}
+
+function removeChord(c) { selectedChords = selectedChords.filter(x => x !== c); update(); }
+function clearAll()     { selectedChords = []; update(); }
+
+function renderChips() {
+  const el = document.getElementById('chips');
+  if (!selectedChords.length) {
+    el.innerHTML = '<span class="hint">← Quality を選んでキーをタップしてください</span>';
+    return;
+  }
+  el.innerHTML = selectedChords.map(c =>
+    `<div class="chip">${c}<span class="chip-x" onclick="removeChord('${c}')">&nbsp;x</span></div>`
+  ).join('');
+}
+
+/* ================================================================
+   MATCHING (replicates Python filter logic)
+   ================================================================ */
+function findMatches() {
+  if (!selectedChords.length) return [];
+  const norm = selectedChords.map(normalize);
+  return DB.filter(e => norm.every(nc => e.matchPool.has(nc)));
+}
+
+/* ================================================================
+   RESULTS
+   ================================================================ */
+function rootOf(chord) {
+  const m = chord.match(/^([A-G][#]?)/);
+  return m ? m[1] : chord;
+}
+
+function renderResults(matches) {
+  const rEl = document.getElementById('results');
+  const cEl = document.getElementById('matchCnt');
+
+  if (!selectedChords.length) {
+    cEl.textContent = '';
+    rEl.innerHTML = '<div class="no-result">コードを選択するとスケールが表示されます</div>';
+    return;
+  }
+  if (!matches.length) {
+    cEl.textContent = '0 found';
+    rEl.innerHTML = '<div class="no-result">マッチするスケールが見つかりません<br>コードの組み合わせを確認してください</div>';
+    return;
+  }
+
+  cEl.textContent = `${matches.length} key${matches.length > 1 ? 's' : ''} found`;
+  const normSel = new Set(selectedChords.map(normalize));
+
+  rEl.innerHTML = matches.map(entry => {
+    const chordsHtml = entry.disp.map((c, i) => {
+      const matched = normSel.has(normalize(c))
+                   || normSel.has(SN[(entry.rootIdx + MAJ_IV[i]) % 12] + SEV_Q[i]);
+      return matched ? `<b class="hl">${c}</b>` : c;
+    }).join('<span style="opacity:.25"> · </span>');
+
+    const rows = SCALES.map(([name, di, relDeg]) => {
+      const dispChord    = entry.disp[di];
+      const root         = rootOf(dispChord);
+      const scaleRootIdx = (entry.rootIdx + MAJ_IV[di]) % 12;
+      return `
+        <div class="srow" onclick="showDiagram('${name}','${root}',${scaleRootIdx})">
+          <div>
+            <div class="srow-name">${name}</div>
+            <div class="srow-iv">${relDeg}</div>
+          </div>
+          <div class="srow-root">${root}</div>
+        </div>`;
+    }).join('');
+
+    return `
+      <div class="result-card">
+        <div class="card-title">${entry.key}</div>
+        <div class="card-chords">${chordsHtml}</div>
+        <div class="scale-grid">${rows}</div>
+        <div class="scale-hint">タップでフレット図を表示</div>
+      </div>`;
+  }).join('');
+}
+
+/* ================================================================
+   MODAL — fretboard display
+   ================================================================ */
+function showDiagram(scaleName, rootNote, rootIdx) {
+  document.getElementById('modal-scale-name').textContent = `${rootNote}  ${scaleName}`;
+  document.getElementById('modal-tuning').textContent     = 'Standard Tuning  E A D G B e';
+  document.getElementById('modal-fretboard').innerHTML    = buildFretboardSVG(scaleName, rootIdx);
+
+  // Calculate initial scroll: center on root fret (on low E string)
+  const lowEOpen = OPEN_NOTES[0]; // E = 4
+  let rf = ((rootIdx - lowEOpen + 12) % 12);
+  if (rf < 2) rf += 12;
+
+  document.getElementById('modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+
+  // Scroll to center root fret area after render
+  requestAnimationFrame(() => {
+    const sc = document.getElementById('fretboard-scroll');
+    if (!sc) return;
+    const cW = 46, ml = 38;
+    const rootCenterX = ml + (rf - 0.5) * cW;
+    sc.scrollLeft = Math.max(0, rootCenterX - sc.offsetWidth / 2);
+  });
+}
+
+function closeModal() {
+  document.getElementById('modal').classList.remove('open');
+  document.body.style.overflow = '';
+}
+
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
+
+/* ================================================================
+   UPDATE & INIT
+   ================================================================ */
+function update() { renderChips(); renderResults(findMatches()); }
+
+window.addEventListener('load',   () => { renderPiano(); update(); });
+window.addEventListener('resize', renderPiano);
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js').catch(() => {});
+  });
+}
+</script>
+</body>
+</html>

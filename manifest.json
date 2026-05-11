@@ -1,12 +1,25 @@
 {
   "name": "diatonicMaker",
   "short_name": "dM",
-  "icons": [
-    { "src": "icon-192x192.png", "sizes": "192x192", "type": "image/png" },
-    { "src": "icon-512x512.png", "sizes": "512x512", "type": "image/png" }
-  ],
-  "start_url": "/",
+  "description": "コードからスケールを探す — ギターフレット図付き",
+  "start_url": "./index.html",
   "display": "standalone",
+  "orientation": "portrait-primary",
   "background_color": "#09090d",
-  "theme_color": "#c8902a"
+  "theme_color": "#c8902a",
+  "lang": "ja",
+  "icons": [
+    {
+      "src": "icon-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512x512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
 }
