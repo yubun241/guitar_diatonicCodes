@@ -154,6 +154,26 @@ h1 { font-family:'Playfair Display',serif; font-size:clamp(2rem,7vw,3rem); color
 .legend-dot   { width:11px; height:11px; border-radius:50%; flex-shrink:0; }
 #modal-scroll-hint { text-align:center; font-size:.57rem; color:var(--dim); margin-top:8px; letter-spacing:.1em; }
 
+/* ── Landscape: full-screen modal, fretboard fits width ── */
+@media (orientation: landscape) and (max-height: 500px) {
+  #modal { align-items:stretch; }
+  #modal-box {
+    max-width:none; width:100%; height:100%; border-radius:0; border-top-width:2px;
+    padding:10px 14px calc(10px + env(safe-area-inset-bottom)) 14px;
+    overflow-y:auto; display:flex; flex-direction:column;
+  }
+  #modal-close { top:6px; right:10px; }
+  #modal-scale-name { font-size:.95rem; }
+  #modal-tuning { margin-top:1px; }
+  .inst-row { margin-top:6px; }
+  .inst-row .q-btn { padding:5px 2px; font-size:.56rem; }
+  .inst-row.tune { margin-top:4px; }
+  #fretboard-scroll { margin-top:8px; overflow-x:hidden; }
+  #fretboard-scroll svg { width:100%; height:auto; }
+  #modal-legend { margin-top:6px; gap:12px; }
+  #modal-scroll-hint { display:none; }
+}
+
 /* ── Views & bottom nav ── */
 .view { display:none; }
 .view.active { display:block; }
@@ -178,9 +198,7 @@ h1 { font-family:'Playfair Display',serif; font-size:clamp(2rem,7vw,3rem); color
 #cof-wrap { position:relative; margin:0 auto 14px; width:min(100%,420px); touch-action:none; user-select:none; -webkit-user-select:none; }
 #cof { display:block; width:100%; height:auto; cursor:grab; }
 #cof:active { cursor:grabbing; }
-#cof.anim #wheel, #cof.anim .cof-lbl { transition:transform .32s cubic-bezier(.22,1,.36,1); }
-#wheel { transform-origin:200px 200px; }
-.cof-lbl { transform-box:fill-box; transform-origin:center; pointer-events:none; font-family:'Fira Code',monospace; font-weight:500; }
+.cof-lbl { pointer-events:none; font-family:'Fira Code',monospace; font-weight:500; }
 .seg { fill:#13131b; stroke:#09090d; stroke-width:1.5; transition:fill .18s; }
 .seg.dia  { fill:#23201a; }
 .seg.key  { fill:#c8902a; }
@@ -207,7 +225,8 @@ h1 { font-family:'Playfair Display',serif; font-size:clamp(2rem,7vw,3rem); color
 .deg-row { display:flex; gap:4px; margin-bottom:8px; }
 .deg-row .q-btn { font-size:.62rem; padding:8px 2px; min-width:0; }
 .deg-row .q-btn small { display:block; font-size:.5rem; opacity:.7; margin-top:2px; }
-.sev-row { display:flex; justify-content:flex-end; margin-bottom:10px; }
+.type-row { display:flex; flex-wrap:wrap; gap:4px; margin-bottom:12px; }
+.type-row .q-btn { flex:0 0 auto; min-width:0; font-size:.6rem; padding:6px 9px; }
 .toggle { font-size:.58rem; letter-spacing:.15em; color:var(--text2); border:1px solid var(--border); padding:5px 12px; border-radius:20px; cursor:pointer; background:var(--s1); font-family:'Fira Code',monospace; transition:all .12s; }
 .toggle.on { border-color:var(--gold); color:var(--gold2); }
 #cof-info { background:var(--s1); border:1px solid var(--border); border-left:3px solid var(--gold); border-radius:var(--radius); padding:14px 16px; }
@@ -290,14 +309,11 @@ h1 { font-family:'Playfair Display',serif; font-size:clamp(2rem,7vw,3rem); color
   </div>
   <div class="mode-row" id="modeRow">
     <button class="q-btn active" data-m="scale">SCALE</button>
-    <button class="q-btn" data-m="penta">PENTA</button>
     <button class="q-btn" data-m="chord">CHORD</button>
     <button class="q-btn" data-m="free">FREE</button>
   </div>
   <div class="deg-row" id="degRow" style="display:none"></div>
-  <div class="sev-row" id="sevRow" style="display:none">
-    <button class="toggle" id="sevToggle" onclick="toggleSev()">7th</button>
-  </div>
+  <div class="type-row" id="typeRow"></div>
 
   <div id="cof-info"></div>
   <p class="cof-hint" id="cof-hint">円盤をドラッグで回転 ／ キーをタップで12時へ</p>
@@ -524,7 +540,7 @@ function buildFretboardSVG(scaleName, rootIdx) {
   const cW   = 46;   // cell width (px per fret)
   const cH   = 36;   // string spacing
   const ml   = 38;   // left margin (string labels + open circles)
-  const mr   = 14;
+  const mr   = 26;
   const mt   = 22;   // top margin (above string 1)
   const mb   = 22;   // bottom margin (below string 6)
   const rDot = 13;   // note dot radius
@@ -818,6 +834,8 @@ function showOnCircle(rootIdx) { switchView('circle'); setKey(rootIdx); }
    Geometry: slot k (0..11) clockwise from 12 o'clock, pitch = k*7 mod 12
    (7 is its own inverse mod 12, so slot(pitch) = pitch*7 mod 12 too)
    Rotation state `rot` (deg, unbounded). Key = slot sitting at 12 o'clock.
+   All transforms are SVG attributes (CSS transform-box on <text> is
+   unreliable on iOS Safari); snapping is animated with rAF.
    ================================================================ */
 const CX = 200, CY = 200;
 const R_OUT = [152, 196];   // major ring
@@ -827,18 +845,46 @@ const DEG_LBL = ['I','ii','iii','IV','V','vi','vii°'];
 const slotOf  = pc => (pc * 7) % 12;
 const pcOf    = k  => (k * 7) % 12;
 
+/* Chord types (semitones from root) */
+const CHORD_TYPES = [
+  ['',      [0,4,7]],        ['m',     [0,3,7]],        ['dim',   [0,3,6]],        ['aug',   [0,4,8]],
+  ['sus2',  [0,2,7]],        ['sus4',  [0,5,7]],        ['6',     [0,4,7,9]],      ['m6',    [0,3,7,9]],
+  ['7',     [0,4,7,10]],     ['M7',    [0,4,7,11]],     ['m7',    [0,3,7,10]],     ['mM7',   [0,3,7,11]],
+  ['m7b5',  [0,3,6,10]],     ['dim7',  [0,3,6,9]],      ['aug7',  [0,4,8,10]],     ['7sus4', [0,5,7,10]],
+  ['add9',  [0,2,4,7]],      ['madd9', [0,2,3,7]],      ['9',     [0,2,4,7,10]],   ['m9',    [0,2,3,7,10]],
+  ['M9',    [0,2,4,7,11]],   ['7b9',   [0,1,4,7,10]],   ['7#9',   [0,3,4,7,10]],   ['6/9',   [0,2,4,7,9]],
+];
+/* Scale types: base table + extras */
+const SCALE_TYPES = Object.assign({}, SCALE_IV, {
+  'Whole Tone':        [0,2,4,6,8,10],
+  'Diminished (H-W)':  [0,1,3,4,6,7,9,10],
+  'Diminished (W-H)':  [0,2,3,5,6,8,9,11],
+  'Phrygian Dominant': [0,1,4,5,7,8,10],
+  'Lydian Dominant':   [0,2,4,6,7,9,10],
+  'Altered':           [0,1,3,4,6,8,10],
+  'Hungarian Minor':   [0,2,3,6,7,8,11],
+  'Japanese (In)':     [0,1,5,7,8],
+  'Chromatic':         [0,1,2,3,4,5,6,7,8,9,10,11],
+});
+
 let rot = 0;                 // current rotation
-let cofKey = 0;              // pitch class of selected major key
-let cofMode = 'scale';       // scale | penta | chord | free
-let cofDeg  = 0;             // chord degree 0..6
-let cofSev  = false;         // 7th chords
-let cofAll  = false;         // true: all intervals (complete graph) / false: outline only
+let cofKey = 0;              // pitch class of key at 12 o'clock
+let cofMode = 'scale';       // scale | chord | free
+let chordRoot = 0;           // chord root (defaults to key; degree chips move it)
+let chordType = 0;           // index into CHORD_TYPES
+let scaleType = 'Major';     // key into SCALE_TYPES
+let cofAll  = false;         // interval-coloured line overlay
 let freeSet = new Set();     // FREE mode pitch classes
+let animId = null;
 
 function pt(r, aDeg) { const a = aDeg * Math.PI / 180; return [CX + r * Math.sin(a), CY - r * Math.cos(a)]; }
 function arcPath(r1, r2, a0, a1) {
   const [x0,y0]=pt(r2,a0),[x1,y1]=pt(r2,a1),[x2,y2]=pt(r1,a1),[x3,y3]=pt(r1,a0);
   return `M${x0.toFixed(2)} ${y0.toFixed(2)} A${r2} ${r2} 0 0 1 ${x1.toFixed(2)} ${y1.toFixed(2)} L${x2.toFixed(2)} ${y2.toFixed(2)} A${r1} ${r1} 0 0 0 ${x3.toFixed(2)} ${y3.toFixed(2)} Z`;
+}
+/* label group: translate to position, inner <text> counter-rotated via attribute */
+function lblG(cls, k, ring, x, y, dy, txt) {
+  return `<g transform="translate(${x.toFixed(1)} ${y.toFixed(1)})"><text class="cof-lbl ${cls}" data-k="${k}" data-ring="${ring}" x="0" y="${dy}" text-anchor="middle">${txt}</text></g>`;
 }
 
 function buildCircle() {
@@ -851,31 +897,28 @@ function buildCircle() {
     const [ox, oy] = pt((R_OUT[0]+R_OUT[1])/2, a);
     const [ix, iy] = pt((R_IN[0]+R_IN[1])/2, a);
     const [dx, dy] = pt(R_OUT[1] - 9, a);
-    // outer (major)
+    const [ex, ey] = pt(R_IN[0] + 8, a);
     s += `<path class="seg out" data-ring="out" data-slot="${k}" d="${arcPath(R_OUT[0], R_OUT[1], a-14.6, a+14.6)}"/>`;
-    s += `<g class="lbl-g"><text class="cof-lbl lbl-txt" data-k="${k}" x="${ox.toFixed(1)}" y="${(oy+5).toFixed(1)}" text-anchor="middle">${SN[pc]}</text>`
-       + `<text class="cof-lbl deg-txt" data-k="${k}" data-ring="out" x="${dx.toFixed(1)}" y="${(dy+3).toFixed(1)}" text-anchor="middle"></text></g>`;
-    // inner (minor)
+    s += `<g class="lbl-g">${lblG('lbl-txt', k, 'out', ox, oy, 5, SN[pc])}${lblG('deg-txt', k, 'out', dx, dy, 3, '')}</g>`;
     s += `<path class="seg in" data-ring="in" data-slot="${k}" d="${arcPath(R_IN[0], R_IN[1], a-14.6, a+14.6)}"/>`;
-    s += `<g class="lbl-g"><text class="cof-lbl lbl-txt in" data-k="${k}" x="${ix.toFixed(1)}" y="${(iy+4).toFixed(1)}" text-anchor="middle">${SN[mpc]}m</text>`
-       + `<text class="cof-lbl deg-txt" data-k="${k}" data-ring="in" x="${pt(R_IN[0]+8,a)[0].toFixed(1)}" y="${(pt(R_IN[0]+8,a)[1]+3).toFixed(1)}" text-anchor="middle"></text></g>`;
+    s += `<g class="lbl-g">${lblG('lbl-txt in', k, 'in', ix, iy, 4, SN[mpc] + 'm')}${lblG('deg-txt', k, 'in', ex, ey, 3, '')}</g>`;
   }
-  // hub
   s += `<circle cx="${CX}" cy="${CY}" r="${R_HUB+2}" fill="url(#hubg)" stroke="#252535" stroke-width="1"/>`;
   for (let k = 0; k < 12; k++) { const [x,y] = pt(R_HUB-6, k*30); s += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="1.6" fill="#2e2e40"/>`; }
   s += `<g id="poly"></g>`;
-  s += `</g>`; // wheel
-  // fixed marker at 12 o'clock
+  s += `</g>`;
   s += `<path id="cof-marker" d="M${CX-7} 2 L${CX+7} 2 L${CX} 14 Z"/>`;
   svg.innerHTML = s;
+  cofLabels = Array.from(svg.querySelectorAll('.cof-lbl'));
+  cofWheel  = svg.querySelector('#wheel');
 
-  // pointer handling
   const wrap = document.getElementById('cof-wrap');
   let dragging = false, a0 = 0, r0 = 0, moved = 0, tgt = null;
   const angAt = e => { const b = svg.getBoundingClientRect(); return Math.atan2(e.clientX - (b.left + b.width/2), -(e.clientY - (b.top + b.height/2))) * 180 / Math.PI; };
   wrap.addEventListener('pointerdown', e => {
+    stopAnim();
     dragging = true; moved = 0; a0 = angAt(e); r0 = rot; tgt = e.target.closest('.seg');
-    svg.classList.remove('anim'); wrap.setPointerCapture(e.pointerId);
+    wrap.setPointerCapture(e.pointerId);
   });
   wrap.addEventListener('pointermove', e => {
     if (!dragging) return;
@@ -885,62 +928,70 @@ function buildCircle() {
   });
   const end = e => {
     if (!dragging) return; dragging = false;
-    svg.classList.add('anim');
-    if (moved < 3 && tgt) {                    // tap
+    if (moved < 3 && tgt) {
       const k = +tgt.dataset.slot, ring = tgt.dataset.ring;
       if (cofMode === 'free') {
         const pc = ring === 'out' ? pcOf(k) : (pcOf(k) + 9) % 12;
         freeSet.has(pc) ? freeSet.delete(pc) : freeSet.add(pc);
-        snapTo(nearestRot(rot)); cofUpdate();
+        animateTo(nearestRot(rot));
       } else {
         rotateSlotToTop(k);
       }
     } else {
-      snapTo(nearestRot(rot));
+      animateTo(nearestRot(rot));
     }
   };
   wrap.addEventListener('pointerup', end);
   wrap.addEventListener('pointercancel', end);
 }
 
+let cofLabels = [], cofWheel = null;
 function applyRot() {
-  document.getElementById('wheel').style.transform = `rotate(${rot}deg)`;
-  document.querySelectorAll('#cof .cof-lbl').forEach(t => t.style.transform = `rotate(${-rot}deg)`);
+  if (!cofWheel) return;
+  cofWheel.setAttribute('transform', `rotate(${rot.toFixed(2)} ${CX} ${CY})`);
+  const inv = `rotate(${(-rot).toFixed(2)})`;
+  for (const t of cofLabels) t.setAttribute('transform', inv);
 }
 const nearestRot = r => Math.round(r / 30) * 30;
-function snapTo(r) {
+function stopAnim() { if (animId) { cancelAnimationFrame(animId); animId = null; } }
+function commitKey() {
   const prevKey = cofKey;
-  rot = r; applyRot();
   const k = ((Math.round(-rot / 30) % 12) + 12) % 12;
   cofKey = pcOf(k);
-  if (cofKey !== prevKey && navigator.vibrate) navigator.vibrate(8);
+  if (cofKey !== prevKey) { chordRoot = cofKey; if (navigator.vibrate) navigator.vibrate(8); }
   cofUpdate();
 }
-function rotateSlotToTop(k) {
-  // shortest path to the rotation that puts slot k at 12 o'clock
-  const base = -k * 30;
-  let d = ((base - rot) % 360 + 540) % 360 - 180;
-  snapTo(rot + d);
+function animateTo(target) {
+  stopAnim();
+  const from = rot, delta = target - from, dur = 320, t0 = performance.now();
+  if (Math.abs(delta) < 0.01) { rot = target; applyRot(); commitKey(); return; }
+  const ease = x => 1 - Math.pow(1 - x, 3);
+  const step = now => {
+    const u = Math.min(1, (now - t0) / dur);
+    rot = from + delta * ease(u); applyRot();
+    if (u < 1) animId = requestAnimationFrame(step);
+    else { animId = null; rot = target; applyRot(); commitKey(); }
+  };
+  animId = requestAnimationFrame(step);
 }
-function setKey(pc) { document.getElementById('cof').classList.add('anim'); rotateSlotToTop(slotOf(pc)); }
-function stepKey(dir) { document.getElementById('cof').classList.add('anim'); snapTo(nearestRot(rot) - dir * 30); }
+function rotateSlotToTop(k) {
+  const base = -k * 30;
+  const d = ((base - rot) % 360 + 540) % 360 - 180;
+  animateTo(rot + d);
+}
+function setKey(pc) { rotateSlotToTop(slotOf(pc)); }
+function stepKey(dir) { animateTo(nearestRot(rot) - dir * 30); }
 
 /* current pitch set & root for the polygon */
 function cofShape() {
-  const k = cofKey;
-  if (cofMode === 'scale') return { pcs: MAJ_IV.map(iv => (k+iv)%12), root: k };
-  if (cofMode === 'penta') return { pcs: [0,2,4,7,9].map(iv => (k+iv)%12), root: k };
-  if (cofMode === 'chord') {
-    const n = cofSev ? 4 : 3;
-    const pcs = []; for (let i = 0; i < n; i++) pcs.push((k + MAJ_IV[(cofDeg + 2*i) % 7]) % 12);
-    return { pcs, root: pcs[0] };
-  }
+  if (cofMode === 'scale') return { pcs: SCALE_TYPES[scaleType].map(iv => (cofKey+iv)%12), root: cofKey };
+  if (cofMode === 'chord') return { pcs: CHORD_TYPES[chordType][1].map(iv => (chordRoot+iv)%12), root: chordRoot };
   return { pcs: [...freeSet], root: null };
 }
+const chordName = () => SN[chordRoot] + CHORD_TYPES[chordType][0];
 
 function cofUpdate() {
   const k = cofKey, ks = slotOf(k);
-  // segment classes
   document.querySelectorAll('#cof .seg').forEach(seg => {
     const s = +seg.dataset.slot, rel = ((s - ks) % 12 + 12) % 12, out = seg.dataset.ring === 'out';
     seg.classList.remove('dia','key','rel','dim','free');
@@ -952,16 +1003,13 @@ function cofUpdate() {
     if (out) { if (rel === 0) seg.classList.add('key'); else if (rel === 1 || rel === 11) seg.classList.add('dia'); }
     else     { if (rel === 0) seg.classList.add('rel'); else if (rel === 1 || rel === 11) seg.classList.add('dia'); else if (rel === 2) seg.classList.add('dim'); }
   });
-  // degree labels (IV I V on outer, ii vi iii vii° on inner)
   document.querySelectorAll('#cof .deg-txt').forEach(t => {
-    const s = +t.dataset.k, rel = ((s - slotOf(k)) % 12 + 12) % 12, out = t.dataset.ring === 'out';
+    const s = +t.dataset.k, rel = ((s - ks) % 12 + 12) % 12, out = t.dataset.ring === 'out';
     let d = '';
-    if (cofMode !== 'free') {
-      if (out) d = { 0:'I', 1:'V', 11:'IV' }[rel] || '';
-      else     d = { 0:'vi', 1:'iii', 11:'ii', 2:'vii°' }[rel] || '';
-    }
+    if (cofMode !== 'free') d = out ? ({ 0:'I', 1:'V', 11:'IV' }[rel] || '') : ({ 0:'vi', 1:'iii', 11:'ii', 2:'vii°' }[rel] || '');
     t.textContent = d;
   });
+
   // polygon
   const { pcs, root } = cofShape();
   const ordered = [...pcs].sort((a,b) => ((a-(root??0))%12+12)%12 - ((b-(root??0))%12+12)%12);
@@ -969,16 +1017,13 @@ function cofUpdate() {
   let p = '';
   if (pts.length >= 2) {
     const d = pts.map(([x,y],i) => `${i?'L':'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join(' ') + (pts.length > 2 ? ' Z' : '');
-    // filled area = convex hull (points sorted by circle position; no self-intersection)
     const hull = [...ordered].sort((a,b) => slotOf(a) - slotOf(b)).map(pc => pt(R_HUB - 6, slotOf(pc) * 30));
     const hullD = hull.map(([x,y],i) => `${i?'L':'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join(' ') + ' Z';
-    // filled hull with gold outline (2 points: just a line)
     p += `<path d="${pts.length > 2 ? hullD : d}" fill="${pts.length > 2 ? 'rgba(200,144,42,.32)' : 'none'}" stroke="#e8b84b" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
     if (cofAll) {
-      // optional overlay: every pair, coloured by interval class (slot distance 1..6)
       for (let i = 0; i < ordered.length; i++) for (let j = i+1; j < ordered.length; j++) {
         const sd = Math.abs(slotOf(ordered[i]) - slotOf(ordered[j]));
-        const dist = Math.min(sd, 12 - sd);                 // 1=P5 2=M2/m7 3=m3 4=M3 5=M7/m2 6=TT
+        const dist = Math.min(sd, 12 - sd);
         p += `<line x1="${pts[i][0].toFixed(1)}" y1="${pts[i][1].toFixed(1)}" x2="${pts[j][0].toFixed(1)}" y2="${pts[j][1].toFixed(1)}" stroke="${IC_COLOR[dist]}" stroke-width="1.6" stroke-linecap="round" opacity=".9"/>`;
       }
     }
@@ -994,16 +1039,14 @@ function cofUpdate() {
   const relMin = SN[(k+9)%12];
   document.querySelector('#cof-key .k1').textContent = `${SN[k]} Major`;
   document.querySelector('#cof-key .k2').textContent = `${relMin} minor`;
-  const notes = MAJ_IV.map(iv => SN[(k+iv)%12]);
-  const chords = MAJ_IV.map((iv,i) => SN[(k+iv)%12] + (cofSev ? SEV_Q[i] : TRIAD_Q[i]));
+  const diaChords = MAJ_IV.map((iv,i) => SN[(k+iv)%12] + TRIAD_Q[i]);
   const shapeNotes = ordered.map(pc => {
     const st = root === null ? IV_DEFAULT : ivStyle(pc - root);
     return `<b style="color:${st.stroke}">${SN[pc]}</b>`;
   }).join(' ');
   let title;
-  if (cofMode === 'scale') title = `${SN[k]} Major / ${relMin} Natural Minor`;
-  else if (cofMode === 'penta') title = `${SN[k]} Major Pentatonic / ${relMin} Minor Pentatonic`;
-  else if (cofMode === 'chord') title = `${DEG_LBL[cofDeg]} — ${chords[cofDeg]}`;
+  if (cofMode === 'scale') title = `${SN[k]} ${scaleType}`;
+  else if (cofMode === 'chord') title = chordName();
   else title = freeSet.size ? `${freeSet.size} notes` : 'リングの音をタップして選択';
   let linesRow = '';
   if (cofAll && ordered.length >= 2) {
@@ -1014,26 +1057,42 @@ function cofUpdate() {
     linesRow = `<div class="info-row"><span class="ik">lines</span><span class="iv" style="white-space:normal;line-height:1.6">${[1,2,3,4,5,6].filter(d => present.has(d))
       .map(d => `<span style="color:${IC_COLOR[d]}">━ ${IC_LABEL[d]}</span>`).join('&nbsp;&nbsp;')}</span></div>`;
   }
+  const ivRow = root === null ? '' : `<div class="info-row"><span class="ik">degrees</span><span class="iv">${ordered.map(pc => {
+    const iv = ((pc - root) % 12 + 12) % 12, st = ivStyle(iv);
+    return `<span style="color:${st.stroke}">${IV_NAME[iv]}</span>`; }).join('  ')}</span></div>`;
   document.getElementById('cof-info').innerHTML = `
     <div class="info-row"><span class="ik">shape</span><span class="iv">${title}</span></div>${linesRow}
-    <div class="info-row"><span class="ik">notes</span><span class="iv">${shapeNotes || '—'}</span></div>
-    <div class="info-row"><span class="ik">scale</span><span class="iv">${notes.join('  ')}</span></div>
-    <div class="info-row"><span class="ik">chords</span><span class="iv">${chords.map((c,i)=> cofMode==='chord'&&i===cofDeg?`<b>${c}</b>`:c).join('<span style="opacity:.25"> · </span>')}</span></div>`;
+    <div class="info-row"><span class="ik">notes</span><span class="iv">${shapeNotes || '—'}</span></div>${ivRow}
+    <div class="info-row"><span class="ik">diatonic</span><span class="iv">${diaChords.join('<span style="opacity:.25"> · </span>')}</span></div>`;
 
-  // degree buttons
-  const dr = document.getElementById('degRow');
+  // type pickers
+  const dr = document.getElementById('degRow'), tr = document.getElementById('typeRow');
   dr.style.display = cofMode === 'chord' ? 'flex' : 'none';
-  document.getElementById('sevRow').style.display = cofMode === 'chord' ? 'flex' : 'none';
+  tr.style.display = cofMode === 'free' ? 'none' : 'flex';
   if (cofMode === 'chord') {
-    dr.innerHTML = DEG_LBL.map((d,i) => `<button class="q-btn${i===cofDeg?' active':''}" onclick="setDeg(${i})">${d}<small>${chords[i]}</small></button>`).join('');
+    dr.innerHTML = DEG_LBL.map((d,i) => {
+      const r = (k + MAJ_IV[i]) % 12, on = r === chordRoot;
+      return `<button class="q-btn${on?' active':''}" onclick="setDeg(${i})">${d}<small>${diaChords[i]}</small></button>`; }).join('');
+    tr.innerHTML = CHORD_TYPES.map(([q], i) =>
+      `<button class="q-btn${i===chordType?' active':''}" onclick="setChordType(${i})">${SN[chordRoot]}${q}</button>`).join('');
+  } else if (cofMode === 'scale') {
+    tr.innerHTML = Object.keys(SCALE_TYPES).map(n =>
+      `<button class="q-btn${n===scaleType?' active':''}" onclick="setScaleType('${n}')">${n}</button>`).join('');
   }
   document.getElementById('cof-hint').textContent = cofMode === 'free'
     ? 'リングの音をタップで選択／解除 ・ ドラッグで回転'
-    : '円盤をドラッグで回転 ／ キーをタップで12時へ';
+    : cofMode === 'chord' ? '円盤を回してルートを選択 ／ 度数チップでダイアトニックコード' : '円盤をドラッグで回転 ／ キーをタップで12時へ';
 }
-function setDeg(i) { cofDeg = i; cofUpdate(); }
+const IV_NAME = ['R','b2','2','m3','M3','4','b5','5','#5','6','m7','M7'];
+function setDeg(i) {
+  chordRoot = (cofKey + MAJ_IV[i]) % 12;
+  const q = TRIAD_Q[i];                                         // diatonic triad quality
+  chordType = Math.max(0, CHORD_TYPES.findIndex(([n]) => n === q));
+  cofUpdate();
+}
+function setChordType(i) { chordType = i; cofUpdate(); }
+function setScaleType(n) { scaleType = n; cofUpdate(); }
 function toggleAll() { cofAll = !cofAll; document.getElementById('allToggle').classList.toggle('on', cofAll); cofUpdate(); }
-function toggleSev() { cofSev = !cofSev; document.getElementById('sevToggle').classList.toggle('on', cofSev); cofUpdate(); }
 document.getElementById('modeRow').addEventListener('click', e => {
   const b = e.target.closest('.q-btn'); if (!b) return;
   document.querySelectorAll('#modeRow .q-btn').forEach(x => x.classList.remove('active'));
