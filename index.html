@@ -127,6 +127,11 @@ h1 { font-family:'Playfair Display',serif; font-size:clamp(2rem,7vw,3rem); color
 #modal-close:hover { color:var(--text); }
 #modal-scale-name { font-family:'Playfair Display',serif; font-size:1.1rem; color:var(--gold2); }
 #modal-tuning { font-size:.58rem; color:var(--text2); margin-top:4px; letter-spacing:.06em; }
+.inst-row { display:flex; gap:4px; margin-top:10px; }
+.inst-row .q-btn { font-size:.6rem; padding:7px 2px; min-width:0; }
+.inst-row.tune { margin-top:5px; }
+.inst-row.tune .q-btn { background:var(--s2); }
+.inst-row.tune .q-btn.active { background:var(--gold); }
 
 /* Scrollable fretboard */
 #fretboard-scroll {
@@ -148,11 +153,77 @@ h1 { font-family:'Playfair Display',serif; font-size:clamp(2rem,7vw,3rem); color
 .legend-item  { display:flex; align-items:center; gap:6px; font-size:.6rem; color:var(--text2); }
 .legend-dot   { width:11px; height:11px; border-radius:50%; flex-shrink:0; }
 #modal-scroll-hint { text-align:center; font-size:.57rem; color:var(--dim); margin-top:8px; letter-spacing:.1em; }
+
+/* ── Views & bottom nav ── */
+.view { display:none; }
+.view.active { display:block; }
+#nav {
+  position:fixed; left:0; right:0; bottom:0; z-index:150;
+  display:flex; background:rgba(13,13,20,.96); backdrop-filter:blur(8px);
+  border-top:1px solid var(--border);
+  padding-bottom:env(safe-area-inset-bottom);
+}
+.nav-btn {
+  flex:1; background:none; border:none; color:var(--text2); font-family:'Fira Code',monospace;
+  font-size:.6rem; letter-spacing:.25em; padding:14px 0 12px; cursor:pointer; position:relative;
+  display:flex; flex-direction:column; align-items:center; gap:4px; transition:color .12s;
+}
+.nav-btn svg { width:20px; height:20px; stroke:currentColor; fill:none; stroke-width:1.5; }
+.nav-btn.active { color:var(--gold2); }
+.nav-btn.active::after { content:''; position:absolute; top:-1px; left:30%; right:30%; height:2px; background:var(--gold); }
+.card-link { background:none; border:1px solid var(--border); color:var(--text2); font-family:'Fira Code',monospace; font-size:.55rem; letter-spacing:.1em; padding:3px 9px; border-radius:3px; cursor:pointer; transition:all .12s; float:right; margin-top:2px; }
+.card-link:hover { border-color:var(--gold); color:var(--gold); }
+
+/* ── Circle of fifths ── */
+#cof-wrap { position:relative; margin:0 auto 14px; width:min(100%,420px); touch-action:none; user-select:none; -webkit-user-select:none; }
+#cof { display:block; width:100%; height:auto; cursor:grab; }
+#cof:active { cursor:grabbing; }
+#cof.anim #wheel, #cof.anim .cof-lbl { transition:transform .32s cubic-bezier(.22,1,.36,1); }
+#wheel { transform-origin:200px 200px; }
+.cof-lbl { transform-box:fill-box; transform-origin:center; pointer-events:none; font-family:'Fira Code',monospace; font-weight:500; }
+.seg { fill:#13131b; stroke:#09090d; stroke-width:1.5; transition:fill .18s; }
+.seg.dia  { fill:#23201a; }
+.seg.key  { fill:#c8902a; }
+.seg.rel  { fill:#5a4418; }
+.seg.dim  { fill:#2c2230; }
+.seg.free { fill:#3a3012; }
+.lbl-txt { fill:#4e4a58; font-size:15px; transition:fill .18s; }
+.lbl-txt.in { font-size:12px; }
+.dia  + .lbl-g .lbl-txt { fill:#c8b890; }
+.key  + .lbl-g .lbl-txt { fill:#09090d; font-weight:700; }
+.rel  + .lbl-g .lbl-txt { fill:#f0d890; font-weight:700; }
+.dim  + .lbl-g .lbl-txt { fill:#a08098; }
+.free + .lbl-g .lbl-txt { fill:#e8c86a; }
+.deg-txt { font-size:8px; fill:#8a7a50; letter-spacing:.05em; }
+#cof-marker { fill:var(--gold2); filter:drop-shadow(0 0 4px rgba(232,184,75,.6)); }
+#cof-step { display:flex; justify-content:space-between; align-items:center; margin-bottom:14px; }
+.step-btn { width:44px; height:44px; border-radius:50%; background:var(--s1); border:1px solid var(--border); color:var(--text2); font-size:1rem; cursor:pointer; transition:all .12s; }
+.step-btn:hover { border-color:var(--gold); color:var(--gold); }
+.step-btn:active { background:var(--s3); }
+#cof-key { text-align:center; }
+#cof-key .k1 { font-family:'Playfair Display',serif; font-size:1.5rem; color:var(--gold2); letter-spacing:.05em; }
+#cof-key .k2 { font-size:.6rem; color:var(--text2); letter-spacing:.2em; margin-top:2px; }
+.mode-row { display:flex; gap:5px; margin-bottom:10px; }
+.deg-row { display:flex; gap:4px; margin-bottom:8px; }
+.deg-row .q-btn { font-size:.62rem; padding:8px 2px; min-width:0; }
+.deg-row .q-btn small { display:block; font-size:.5rem; opacity:.7; margin-top:2px; }
+.sev-row { display:flex; justify-content:flex-end; margin-bottom:10px; }
+.toggle { font-size:.58rem; letter-spacing:.15em; color:var(--text2); border:1px solid var(--border); padding:5px 12px; border-radius:20px; cursor:pointer; background:var(--s1); font-family:'Fira Code',monospace; transition:all .12s; }
+.toggle.on { border-color:var(--gold); color:var(--gold2); }
+#cof-info { background:var(--s1); border:1px solid var(--border); border-left:3px solid var(--gold); border-radius:var(--radius); padding:14px 16px; }
+.info-row { display:flex; gap:10px; align-items:baseline; font-size:.7rem; line-height:1.9; }
+.info-row .ik { color:var(--text2); font-size:.55rem; letter-spacing:.2em; min-width:56px; text-transform:uppercase; }
+.info-row .iv { color:var(--text); overflow-x:auto; white-space:nowrap; }
+.info-row .iv b { color:var(--gold2); }
+.info-row .iv .rt { color:#e05050; font-weight:700; }
+.cof-hint { font-size:.55rem; color:var(--dim); text-align:center; letter-spacing:.1em; margin:10px 0 0; line-height:1.9; }
 </style>
 </head>
 <body>
 <div id="app">
 
+<!-- ═══════════ VIEW: FINDER ═══════════ -->
+<div class="view active" id="view-finder">
   <header>
     <h1>SCALE FINDER</h1>
     <p class="sub">コードからスケールを探す</p>
@@ -195,7 +266,55 @@ h1 { font-family:'Playfair Display',serif; font-size:clamp(2rem,7vw,3rem); color
     <div class="lbl">MATCHING SCALES <span class="match-cnt" id="matchCnt"></span></div>
     <div id="results"><div class="no-result">コードを選択するとスケールが表示されます</div></div>
   </section>
-</div>
+</div><!-- /view-finder -->
+
+<!-- ═══════════ VIEW: CIRCLE OF FIFTHS ═══════════ -->
+<div class="view" id="view-circle">
+  <header>
+    <h1>CIRCLE OF 5THS</h1>
+    <p class="sub">回して・つないで・調を見る</p>
+  </header>
+
+  <div id="cof-step">
+    <button class="step-btn" onclick="stepKey(-1)" aria-label="counter-clockwise">&#8634;</button>
+    <div id="cof-key"><div class="k1">C Major</div><div class="k2">A minor</div></div>
+    <button class="step-btn" onclick="stepKey(1)" aria-label="clockwise">&#8635;</button>
+  </div>
+
+  <div id="cof-wrap">
+    <svg id="cof" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg"></svg>
+  </div>
+
+  <div class="lbl">SHAPE — 何を線でつなぐか
+    <button class="toggle" id="allToggle" onclick="toggleAll()">INTERVALS</button>
+  </div>
+  <div class="mode-row" id="modeRow">
+    <button class="q-btn active" data-m="scale">SCALE</button>
+    <button class="q-btn" data-m="penta">PENTA</button>
+    <button class="q-btn" data-m="chord">CHORD</button>
+    <button class="q-btn" data-m="free">FREE</button>
+  </div>
+  <div class="deg-row" id="degRow" style="display:none"></div>
+  <div class="sev-row" id="sevRow" style="display:none">
+    <button class="toggle" id="sevToggle" onclick="toggleSev()">7th</button>
+  </div>
+
+  <div id="cof-info"></div>
+  <p class="cof-hint" id="cof-hint">円盤をドラッグで回転 ／ キーをタップで12時へ</p>
+</div><!-- /view-circle -->
+
+</div><!-- /app -->
+
+<nav id="nav">
+  <button class="nav-btn active" data-v="finder" onclick="switchView('finder')">
+    <svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="12" rx="1"/><path d="M7 6v8M11 6v8M15 6v8M19 6v8" opacity=".5"/></svg>
+    FINDER
+  </button>
+  <button class="nav-btn" data-v="circle" onclick="switchView('circle')">
+    <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M12 3v3M21 12h-3M12 21v-3M3 12h3" opacity=".5"/></svg>
+    CIRCLE
+  </button>
+</nav>
 
 <!-- Fretboard Modal -->
 <div id="modal">
@@ -204,6 +323,8 @@ h1 { font-family:'Playfair Display',serif; font-size:clamp(2rem,7vw,3rem); color
     <button id="modal-close" onclick="closeModal()">x</button>
     <div id="modal-scale-name"></div>
     <div id="modal-tuning"></div>
+    <div class="inst-row" id="inst-row"></div>
+    <div class="inst-row tune" id="tune-row"></div>
     <div id="fretboard-scroll">
       <div id="modal-fretboard"></div>
     </div>
@@ -217,7 +338,7 @@ h1 { font-family:'Playfair Display',serif; font-size:clamp(2rem,7vw,3rem); color
         Scale note
       </div>
     </div>
-    <div id="modal-scroll-hint">← スクロールで全フレットを確認 →</div>
+    <div id="modal-scroll-hint">← 横スクロールで全体を確認 →</div>
   </div>
 </div>
 
@@ -297,30 +418,109 @@ const DB = SN.map((_, r) => {
    Standard tuning: E A D G B e
    Display: string 1 (high e) at top, string 6 (E) at bottom
    ================================================================ */
-//                        E   A   D   G   B   e4
-const OPEN_NOTES   = [4,  9,  2,  7, 11,  4];
-const STRING_NAMES = ['e','B','G','D','A','E']; // top→bottom
+/* Instruments: open-string pitch classes, low → high (standard tuning) */
+const INSTRUMENTS = {
+  gtr6:  { lbl:'Guitar 6',  open:[4,9,2,7,11,4],    frets:22 },
+  gtr7:  { lbl:'Guitar 7',  open:[11,4,9,2,7,11,4], frets:24 },
+  bass4: { lbl:'Bass 4',    open:[4,9,2,7],         frets:22 },
+  bass5: { lbl:'Bass 5',    open:[11,4,9,2,7],      frets:22 },
+  piano: { lbl:'Piano' },
+};
+/* Whole-instrument down-tunings (semitones) */
+const TUNINGS = [
+  { lbl:'Std',  off:0 },
+  { lbl:'-½',   off:-1 },   // 半音下げ
+  { lbl:'-1',   off:-2 },   // 1音下げ
+  { lbl:'-1½',  off:-3 },   // 1音半下げ
+  { lbl:'-2½',  off:-5 },   // 2音半下げ
+];
+let curInst = 'gtr6', curTune = 0;
+try { curInst = localStorage.getItem('dm.inst') || curInst; curTune = +(localStorage.getItem('dm.tune') || 0); } catch (e) {}
+if (!INSTRUMENTS[curInst]) curInst = 'gtr6';
+if (!TUNINGS[curTune]) curTune = 0;
 
-function openNoteForRow(row) { return OPEN_NOTES[5 - row]; } // row 0=high e, row 5=low E
+/* open notes with tuning offset applied, low → high */
+function openNotes() {
+  const inst = INSTRUMENTS[curInst], off = TUNINGS[curTune].off;
+  return inst.open.map(n => ((n + off) % 12 + 12) % 12);
+}
 
-function circDot(cx, cy, r, isRoot, noteName) {
-  const fill   = isRoot ? '#b82020' : '#1c1c2e';
-  const stroke = isRoot ? '#e04040' : '#c8902a';
-  const tc     = isRoot ? '#ffe0e0' : '#bcb8a8';
-  const fs     = Math.max(7, Math.round(r * 0.76));
-  const dy     = Math.round(r * 0.34);
-  return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${fill}" stroke="${stroke}" stroke-width="1.5"/>`
-       + `<text x="${cx}" y="${cy+dy}" text-anchor="middle" fill="${tc}" `
+/* Interval colouring (semitones from scale/chord root) */
+const IV_STYLE = {
+  0:  { lbl:'Root', fill:'#b82020', stroke:'#e04040', tc:'#ffe0e0' },
+  7:  { lbl:'P5',   fill:'#1d3a66', stroke:'#4f8fe0', tc:'#dbe8ff' },
+  4:  { lbl:'M3',   fill:'#4a6a10', stroke:'#b8f040', tc:'#f0ffd0' },   // bright lime
+  3:  { lbl:'m3',   fill:'#163d26', stroke:'#2fa060', tc:'#cdeedd' },   // deep green
+  11: { lbl:'M7',   fill:'#50266e', stroke:'#cf8cff', tc:'#f2e4ff' },   // bright violet
+  10: { lbl:'m7',   fill:'#2a1e5c', stroke:'#7a62d8', tc:'#e0daf8' },   // deep indigo
+};
+const IV_DEFAULT = { lbl:'Other', fill:'#1c1c2e', stroke:'#c8902a', tc:'#bcb8a8' };
+// Interval-class colour by circle-of-fifths slot distance (unordered pairs)
+const IC_COLOR = { 1: IV_STYLE[7].stroke, 2: IV_STYLE[10].stroke, 3: IV_STYLE[3].stroke,
+                   4: IV_STYLE[4].stroke, 5: IV_STYLE[11].stroke, 6: '#c8902a' };
+const IC_LABEL = { 1:'P5/P4', 2:'M2/m7', 3:'m3/M6', 4:'M3/m6', 5:'M7/m2', 6:'TT' };
+const ivStyle = iv => IV_STYLE[((iv % 12) + 12) % 12] || IV_DEFAULT;
+
+function circDot(cx, cy, r, iv, noteName) {
+  const st = ivStyle(iv);
+  const fs = Math.max(7, Math.round(r * 0.76));
+  const dy = Math.round(r * 0.34);
+  return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${st.fill}" stroke="${st.stroke}" stroke-width="1.5"/>`
+       + `<text x="${cx}" y="${cy+dy}" text-anchor="middle" fill="${st.tc}" `
        + `font-size="${fs}" font-family="Fira Code,monospace" font-weight="600">${noteName}</text>`;
+}
+
+function legendHTML(intervals) {
+  const seen = new Set();
+  const ORDER = [0, 3, 4, 7, 10, 11];               // Root m3 M3 P5 m7 M7, then Other
+  const sorted = [...intervals].sort((a, b) => (ORDER.indexOf(a) + 1 || 99) - (ORDER.indexOf(b) + 1 || 99));
+  return sorted.map(iv => {
+    const st = ivStyle(iv), key = st.lbl;
+    if (seen.has(key)) return ''; seen.add(key);
+    return `<div class="legend-item"><div class="legend-dot" style="background:${st.fill};border:1.5px solid ${st.stroke}"></div>${key}</div>`;
+  }).join('');
+}
+
+/* Piano: 2 octaves C–B, scale notes marked with interval-coloured dots */
+function buildPianoSVG(scaleSet, rootIdx) {
+  const OCT = 2, ww = 34, wh = 120, bw = 21, bh = 74, mt = 10, ml = 6;
+  const W = ml * 2 + 7 * OCT * ww, H = mt + wh + 10;
+  let s = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" xmlns="http://www.w3.org/2000/svg">`;
+  s += `<rect width="${W}" height="${H}" fill="#0d0d14"/>`;
+  const dot = (cx, cy, pc, r) => {
+    if (!scaleSet.has(pc)) return '';
+    const st = ivStyle(pc - rootIdx);
+    return `<circle cx="${cx}" cy="${cy}" r="${r}" fill="${st.fill}" stroke="${st.stroke}" stroke-width="1.5"/>`
+         + `<text x="${cx}" y="${cy + 3.5}" text-anchor="middle" fill="${st.tc}" font-size="9" font-family="Fira Code,monospace" font-weight="600">${SN[pc]}</text>`;
+  };
+  let whites = '', blacks = '';
+  for (let o = 0; o < OCT; o++) {
+    WHITE_KEYS.forEach((k, i) => {
+      const x = ml + (o * 7 + i) * ww;
+      whites += `<rect x="${x}" y="${mt}" width="${ww - 1.5}" height="${wh}" rx="3" fill="#ece3d2" stroke="#9a9080" stroke-width="1"/>`;
+      whites += dot(x + ww / 2 - 0.75, mt + wh - 18, k.i, 11);
+    });
+    BLACK_KEYS.forEach(k => {
+      const x = ml + (o * 7 + k.wp) * ww - bw / 2;
+      blacks += `<rect x="${x}" y="${mt}" width="${bw}" height="${bh}" rx="2" fill="#1a1a24" stroke="#3a3a48" stroke-width="1"/>`;
+      blacks += dot(x + bw / 2, mt + bh - 14, k.i, 9.5);
+    });
+  }
+  s += whites + blacks + '</svg>';
+  return s;
 }
 
 function buildFretboardSVG(scaleName, rootIdx) {
   const intervals = SCALE_IV[scaleName];
   if (!intervals) return '';
   const scaleSet = new Set(intervals.map(iv => (rootIdx + iv) % 12));
+  if (curInst === 'piano') return buildPianoSVG(scaleSet, rootIdx);
 
-  const NF   = 22;   // frets 1–22
-  const NS   = 6;    // strings
+  const opens = openNotes();                       // low → high
+  const NF   = INSTRUMENTS[curInst].frets;
+  const NS   = opens.length;
+  const openNoteForRow = row => opens[NS - 1 - row];   // row 0 = highest string
+  const STRING_NAMES   = opens.slice().reverse().map((n, i) => i === 0 && NS > 4 ? SN[n].toLowerCase() : SN[n]);
   const cW   = 46;   // cell width (px per fret)
   const cH   = 36;   // string spacing
   const ml   = 38;   // left margin (string labels + open circles)
@@ -343,7 +543,7 @@ function buildFretboardSVG(scaleName, rootIdx) {
 
   // ── Fret inlay markers (before strings/frets so they appear behind) ──
   const INLAY1 = [3, 5, 7, 9, 15, 17, 19, 21];
-  const INLAY2 = [12];
+  const INLAY2 = [12, 24];
   INLAY1.forEach(f => {
     if (f > NF) return;
     const x = ml + (f - 0.5) * cW;
@@ -380,7 +580,7 @@ function buildFretboardSVG(scaleName, rootIdx) {
   }
 
   // ── Fret number labels (at inlay positions, below neck) ──
-  [1, 3, 5, 7, 9, 12, 15, 17, 19, 21].forEach(f => {
+  [1, 3, 5, 7, 9, 12, 15, 17, 19, 21, 24].forEach(f => {
     if (f > NF) return;
     const x = ml + (f - 0.5) * cW;
     s += `<text x="${x}" y="${neckBot+16}" text-anchor="middle" fill="#404054"
@@ -395,7 +595,7 @@ function buildFretboardSVG(scaleName, rootIdx) {
     // Open string (left of nut)
     const openIdx = openNote % 12;
     if (scaleSet.has(openIdx)) {
-      s += circDot(ml - 22, y, rDot - 2, openIdx === rootIdx, SN[openIdx]);
+      s += circDot(ml - 22, y, rDot - 2, openIdx - rootIdx, SN[openIdx]);
     }
 
     // Frets 1–22
@@ -403,7 +603,7 @@ function buildFretboardSVG(scaleName, rootIdx) {
       const noteIdx = (openNote + f) % 12;
       if (!scaleSet.has(noteIdx)) continue;
       const cx = ml + (f - 0.5) * cW;
-      s += circDot(cx, y, rDot, noteIdx === rootIdx, SN[noteIdx]);
+      s += circDot(cx, y, rDot, noteIdx - rootIdx, SN[noteIdx]);
     }
   }
 
@@ -535,6 +735,7 @@ function renderResults(matches) {
 
     return `
       <div class="result-card">
+        <button class="card-link" onclick="showOnCircle(${entry.rootIdx})">&#9678; CIRCLE</button>
         <div class="card-title">${entry.key}</div>
         <div class="card-chords">${chordsHtml}</div>
         <div class="scale-grid">${rows}</div>
@@ -546,27 +747,52 @@ function renderResults(matches) {
 /* ================================================================
    MODAL — fretboard display
    ================================================================ */
-function showDiagram(scaleName, rootNote, rootIdx) {
-  document.getElementById('modal-scale-name').textContent = `${rootNote}  ${scaleName}`;
-  document.getElementById('modal-tuning').textContent     = 'Standard Tuning  E A D G B e';
-  document.getElementById('modal-fretboard').innerHTML    = buildFretboardSVG(scaleName, rootIdx);
+let curDiagram = null;   // { scaleName, rootNote, rootIdx }
 
-  // Calculate initial scroll: center on root fret (on low E string)
-  const lowEOpen = OPEN_NOTES[0]; // E = 4
-  let rf = ((rootIdx - lowEOpen + 12) % 12);
-  if (rf < 2) rf += 12;
+function renderInstRows() {
+  document.getElementById('inst-row').innerHTML = Object.entries(INSTRUMENTS).map(([k, v]) =>
+    `<button class="q-btn${k === curInst ? ' active' : ''}" onclick="setInst('${k}')">${v.lbl}</button>`).join('');
+  const tr = document.getElementById('tune-row');
+  tr.style.display = curInst === 'piano' ? 'none' : 'flex';
+  tr.innerHTML = TUNINGS.map((t, i) =>
+    `<button class="q-btn${i === curTune ? ' active' : ''}" onclick="setTune(${i})">${t.lbl}</button>`).join('');
+}
+function setInst(k) { curInst = k; try { localStorage.setItem('dm.inst', k); } catch (e) {} renderDiagram(); }
+function setTune(i) { curTune = i; try { localStorage.setItem('dm.tune', i); } catch (e) {} renderDiagram(); }
 
-  document.getElementById('modal').classList.add('open');
-  document.body.style.overflow = 'hidden';
+function tuningLabel() {
+  if (curInst === 'piano') return 'C – B  ×2 octaves';
+  const names = openNotes().map(n => SN[n]).join(' ');
+  const t = TUNINGS[curTune];
+  return `${t.off === 0 ? 'Standard' : t.lbl + ' step'}  ${names}`;
+}
 
-  // Scroll to center root fret area after render
+function renderDiagram() {
+  if (!curDiagram) return;
+  const { scaleName, rootIdx } = curDiagram;
+  renderInstRows();
+  document.getElementById('modal-tuning').textContent  = tuningLabel();
+  document.getElementById('modal-fretboard').innerHTML = buildFretboardSVG(scaleName, rootIdx);
+
+  // initial scroll: centre on the root fret of the lowest string
   requestAnimationFrame(() => {
     const sc = document.getElementById('fretboard-scroll');
     if (!sc) return;
+    if (curInst === 'piano') { sc.scrollLeft = 0; return; }
+    let rf = ((rootIdx - openNotes()[0]) % 12 + 12) % 12;
+    if (rf < 2) rf += 12;
     const cW = 46, ml = 38;
-    const rootCenterX = ml + (rf - 0.5) * cW;
-    sc.scrollLeft = Math.max(0, rootCenterX - sc.offsetWidth / 2);
+    sc.scrollLeft = Math.max(0, ml + (rf - 0.5) * cW - sc.offsetWidth / 2);
   });
+}
+
+function showDiagram(scaleName, rootNote, rootIdx) {
+  curDiagram = { scaleName, rootNote, rootIdx };
+  document.getElementById('modal-scale-name').textContent = `${rootNote}  ${scaleName}`;
+  document.getElementById('modal-legend').innerHTML       = legendHTML(SCALE_IV[scaleName] || []);
+  document.getElementById('modal').classList.add('open');
+  document.body.style.overflow = 'hidden';
+  renderDiagram();
 }
 
 function closeModal() {
@@ -577,11 +803,249 @@ function closeModal() {
 document.addEventListener('keydown', e => { if (e.key === 'Escape') closeModal(); });
 
 /* ================================================================
+   VIEWS
+   ================================================================ */
+function switchView(v) {
+  document.querySelectorAll('.view').forEach(x => x.classList.toggle('active', x.id === 'view-' + v));
+  document.querySelectorAll('.nav-btn').forEach(x => x.classList.toggle('active', x.dataset.v === v));
+  window.scrollTo({ top: 0 });
+  if (v === 'circle') cofUpdate();
+}
+function showOnCircle(rootIdx) { switchView('circle'); setKey(rootIdx); }
+
+/* ================================================================
+   CIRCLE OF FIFTHS
+   Geometry: slot k (0..11) clockwise from 12 o'clock, pitch = k*7 mod 12
+   (7 is its own inverse mod 12, so slot(pitch) = pitch*7 mod 12 too)
+   Rotation state `rot` (deg, unbounded). Key = slot sitting at 12 o'clock.
+   ================================================================ */
+const CX = 200, CY = 200;
+const R_OUT = [152, 196];   // major ring
+const R_IN  = [104, 149];   // minor ring
+const R_HUB = 96;           // polygon canvas radius
+const DEG_LBL = ['I','ii','iii','IV','V','vi','vii°'];
+const slotOf  = pc => (pc * 7) % 12;
+const pcOf    = k  => (k * 7) % 12;
+
+let rot = 0;                 // current rotation
+let cofKey = 0;              // pitch class of selected major key
+let cofMode = 'scale';       // scale | penta | chord | free
+let cofDeg  = 0;             // chord degree 0..6
+let cofSev  = false;         // 7th chords
+let cofAll  = false;         // true: all intervals (complete graph) / false: outline only
+let freeSet = new Set();     // FREE mode pitch classes
+
+function pt(r, aDeg) { const a = aDeg * Math.PI / 180; return [CX + r * Math.sin(a), CY - r * Math.cos(a)]; }
+function arcPath(r1, r2, a0, a1) {
+  const [x0,y0]=pt(r2,a0),[x1,y1]=pt(r2,a1),[x2,y2]=pt(r1,a1),[x3,y3]=pt(r1,a0);
+  return `M${x0.toFixed(2)} ${y0.toFixed(2)} A${r2} ${r2} 0 0 1 ${x1.toFixed(2)} ${y1.toFixed(2)} L${x2.toFixed(2)} ${y2.toFixed(2)} A${r1} ${r1} 0 0 0 ${x3.toFixed(2)} ${y3.toFixed(2)} Z`;
+}
+
+function buildCircle() {
+  const svg = document.getElementById('cof');
+  let s = `<defs><radialGradient id="hubg" cx="50%" cy="50%" r="50%"><stop offset="0" stop-color="#1a1a26"/><stop offset="1" stop-color="#0e0e15"/></radialGradient></defs>`;
+  s += `<circle cx="${CX}" cy="${CY}" r="198" fill="#0d0d14" stroke="#252535" stroke-width="1"/>`;
+  s += `<g id="wheel">`;
+  for (let k = 0; k < 12; k++) {
+    const a = k * 30, pc = pcOf(k), mpc = (pc + 9) % 12;
+    const [ox, oy] = pt((R_OUT[0]+R_OUT[1])/2, a);
+    const [ix, iy] = pt((R_IN[0]+R_IN[1])/2, a);
+    const [dx, dy] = pt(R_OUT[1] - 9, a);
+    // outer (major)
+    s += `<path class="seg out" data-ring="out" data-slot="${k}" d="${arcPath(R_OUT[0], R_OUT[1], a-14.6, a+14.6)}"/>`;
+    s += `<g class="lbl-g"><text class="cof-lbl lbl-txt" data-k="${k}" x="${ox.toFixed(1)}" y="${(oy+5).toFixed(1)}" text-anchor="middle">${SN[pc]}</text>`
+       + `<text class="cof-lbl deg-txt" data-k="${k}" data-ring="out" x="${dx.toFixed(1)}" y="${(dy+3).toFixed(1)}" text-anchor="middle"></text></g>`;
+    // inner (minor)
+    s += `<path class="seg in" data-ring="in" data-slot="${k}" d="${arcPath(R_IN[0], R_IN[1], a-14.6, a+14.6)}"/>`;
+    s += `<g class="lbl-g"><text class="cof-lbl lbl-txt in" data-k="${k}" x="${ix.toFixed(1)}" y="${(iy+4).toFixed(1)}" text-anchor="middle">${SN[mpc]}m</text>`
+       + `<text class="cof-lbl deg-txt" data-k="${k}" data-ring="in" x="${pt(R_IN[0]+8,a)[0].toFixed(1)}" y="${(pt(R_IN[0]+8,a)[1]+3).toFixed(1)}" text-anchor="middle"></text></g>`;
+  }
+  // hub
+  s += `<circle cx="${CX}" cy="${CY}" r="${R_HUB+2}" fill="url(#hubg)" stroke="#252535" stroke-width="1"/>`;
+  for (let k = 0; k < 12; k++) { const [x,y] = pt(R_HUB-6, k*30); s += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="1.6" fill="#2e2e40"/>`; }
+  s += `<g id="poly"></g>`;
+  s += `</g>`; // wheel
+  // fixed marker at 12 o'clock
+  s += `<path id="cof-marker" d="M${CX-7} 2 L${CX+7} 2 L${CX} 14 Z"/>`;
+  svg.innerHTML = s;
+
+  // pointer handling
+  const wrap = document.getElementById('cof-wrap');
+  let dragging = false, a0 = 0, r0 = 0, moved = 0, tgt = null;
+  const angAt = e => { const b = svg.getBoundingClientRect(); return Math.atan2(e.clientX - (b.left + b.width/2), -(e.clientY - (b.top + b.height/2))) * 180 / Math.PI; };
+  wrap.addEventListener('pointerdown', e => {
+    dragging = true; moved = 0; a0 = angAt(e); r0 = rot; tgt = e.target.closest('.seg');
+    svg.classList.remove('anim'); wrap.setPointerCapture(e.pointerId);
+  });
+  wrap.addEventListener('pointermove', e => {
+    if (!dragging) return;
+    let d = angAt(e) - a0; if (d > 180) d -= 360; if (d < -180) d += 360;
+    moved = Math.max(moved, Math.abs(d));
+    rot = r0 + d; applyRot();
+  });
+  const end = e => {
+    if (!dragging) return; dragging = false;
+    svg.classList.add('anim');
+    if (moved < 3 && tgt) {                    // tap
+      const k = +tgt.dataset.slot, ring = tgt.dataset.ring;
+      if (cofMode === 'free') {
+        const pc = ring === 'out' ? pcOf(k) : (pcOf(k) + 9) % 12;
+        freeSet.has(pc) ? freeSet.delete(pc) : freeSet.add(pc);
+        snapTo(nearestRot(rot)); cofUpdate();
+      } else {
+        rotateSlotToTop(k);
+      }
+    } else {
+      snapTo(nearestRot(rot));
+    }
+  };
+  wrap.addEventListener('pointerup', end);
+  wrap.addEventListener('pointercancel', end);
+}
+
+function applyRot() {
+  document.getElementById('wheel').style.transform = `rotate(${rot}deg)`;
+  document.querySelectorAll('#cof .cof-lbl').forEach(t => t.style.transform = `rotate(${-rot}deg)`);
+}
+const nearestRot = r => Math.round(r / 30) * 30;
+function snapTo(r) {
+  const prevKey = cofKey;
+  rot = r; applyRot();
+  const k = ((Math.round(-rot / 30) % 12) + 12) % 12;
+  cofKey = pcOf(k);
+  if (cofKey !== prevKey && navigator.vibrate) navigator.vibrate(8);
+  cofUpdate();
+}
+function rotateSlotToTop(k) {
+  // shortest path to the rotation that puts slot k at 12 o'clock
+  const base = -k * 30;
+  let d = ((base - rot) % 360 + 540) % 360 - 180;
+  snapTo(rot + d);
+}
+function setKey(pc) { document.getElementById('cof').classList.add('anim'); rotateSlotToTop(slotOf(pc)); }
+function stepKey(dir) { document.getElementById('cof').classList.add('anim'); snapTo(nearestRot(rot) - dir * 30); }
+
+/* current pitch set & root for the polygon */
+function cofShape() {
+  const k = cofKey;
+  if (cofMode === 'scale') return { pcs: MAJ_IV.map(iv => (k+iv)%12), root: k };
+  if (cofMode === 'penta') return { pcs: [0,2,4,7,9].map(iv => (k+iv)%12), root: k };
+  if (cofMode === 'chord') {
+    const n = cofSev ? 4 : 3;
+    const pcs = []; for (let i = 0; i < n; i++) pcs.push((k + MAJ_IV[(cofDeg + 2*i) % 7]) % 12);
+    return { pcs, root: pcs[0] };
+  }
+  return { pcs: [...freeSet], root: null };
+}
+
+function cofUpdate() {
+  const k = cofKey, ks = slotOf(k);
+  // segment classes
+  document.querySelectorAll('#cof .seg').forEach(seg => {
+    const s = +seg.dataset.slot, rel = ((s - ks) % 12 + 12) % 12, out = seg.dataset.ring === 'out';
+    seg.classList.remove('dia','key','rel','dim','free');
+    if (cofMode === 'free') {
+      const pc = out ? pcOf(s) : (pcOf(s) + 9) % 12;
+      if (freeSet.has(pc)) seg.classList.add('free');
+      return;
+    }
+    if (out) { if (rel === 0) seg.classList.add('key'); else if (rel === 1 || rel === 11) seg.classList.add('dia'); }
+    else     { if (rel === 0) seg.classList.add('rel'); else if (rel === 1 || rel === 11) seg.classList.add('dia'); else if (rel === 2) seg.classList.add('dim'); }
+  });
+  // degree labels (IV I V on outer, ii vi iii vii° on inner)
+  document.querySelectorAll('#cof .deg-txt').forEach(t => {
+    const s = +t.dataset.k, rel = ((s - slotOf(k)) % 12 + 12) % 12, out = t.dataset.ring === 'out';
+    let d = '';
+    if (cofMode !== 'free') {
+      if (out) d = { 0:'I', 1:'V', 11:'IV' }[rel] || '';
+      else     d = { 0:'vi', 1:'iii', 11:'ii', 2:'vii°' }[rel] || '';
+    }
+    t.textContent = d;
+  });
+  // polygon
+  const { pcs, root } = cofShape();
+  const ordered = [...pcs].sort((a,b) => ((a-(root??0))%12+12)%12 - ((b-(root??0))%12+12)%12);
+  const pts = ordered.map(pc => pt(R_HUB - 6, slotOf(pc) * 30));
+  let p = '';
+  if (pts.length >= 2) {
+    const d = pts.map(([x,y],i) => `${i?'L':'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join(' ') + (pts.length > 2 ? ' Z' : '');
+    // filled area = convex hull (points sorted by circle position; no self-intersection)
+    const hull = [...ordered].sort((a,b) => slotOf(a) - slotOf(b)).map(pc => pt(R_HUB - 6, slotOf(pc) * 30));
+    const hullD = hull.map(([x,y],i) => `${i?'L':'M'}${x.toFixed(1)} ${y.toFixed(1)}`).join(' ') + ' Z';
+    // filled hull with gold outline (2 points: just a line)
+    p += `<path d="${pts.length > 2 ? hullD : d}" fill="${pts.length > 2 ? 'rgba(200,144,42,.32)' : 'none'}" stroke="#e8b84b" stroke-width="2" stroke-linejoin="round" stroke-linecap="round"/>`;
+    if (cofAll) {
+      // optional overlay: every pair, coloured by interval class (slot distance 1..6)
+      for (let i = 0; i < ordered.length; i++) for (let j = i+1; j < ordered.length; j++) {
+        const sd = Math.abs(slotOf(ordered[i]) - slotOf(ordered[j]));
+        const dist = Math.min(sd, 12 - sd);                 // 1=P5 2=M2/m7 3=m3 4=M3 5=M7/m2 6=TT
+        p += `<line x1="${pts[i][0].toFixed(1)}" y1="${pts[i][1].toFixed(1)}" x2="${pts[j][0].toFixed(1)}" y2="${pts[j][1].toFixed(1)}" stroke="${IC_COLOR[dist]}" stroke-width="1.6" stroke-linecap="round" opacity=".9"/>`;
+      }
+    }
+  }
+  ordered.forEach((pc, i) => {
+    const [x,y] = pts[i], isRoot = pc === root;
+    const st = root === null ? IV_DEFAULT : ivStyle(pc - root);
+    p += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${isRoot?6:4.5}" fill="${st.fill}" stroke="${st.stroke}" stroke-width="1.5"/>`;
+  });
+  document.getElementById('poly').innerHTML = p;
+
+  // header & info
+  const relMin = SN[(k+9)%12];
+  document.querySelector('#cof-key .k1').textContent = `${SN[k]} Major`;
+  document.querySelector('#cof-key .k2').textContent = `${relMin} minor`;
+  const notes = MAJ_IV.map(iv => SN[(k+iv)%12]);
+  const chords = MAJ_IV.map((iv,i) => SN[(k+iv)%12] + (cofSev ? SEV_Q[i] : TRIAD_Q[i]));
+  const shapeNotes = ordered.map(pc => {
+    const st = root === null ? IV_DEFAULT : ivStyle(pc - root);
+    return `<b style="color:${st.stroke}">${SN[pc]}</b>`;
+  }).join(' ');
+  let title;
+  if (cofMode === 'scale') title = `${SN[k]} Major / ${relMin} Natural Minor`;
+  else if (cofMode === 'penta') title = `${SN[k]} Major Pentatonic / ${relMin} Minor Pentatonic`;
+  else if (cofMode === 'chord') title = `${DEG_LBL[cofDeg]} — ${chords[cofDeg]}`;
+  else title = freeSet.size ? `${freeSet.size} notes` : 'リングの音をタップして選択';
+  let linesRow = '';
+  if (cofAll && ordered.length >= 2) {
+    const present = new Set();
+    for (let i = 0; i < ordered.length; i++) for (let j = i+1; j < ordered.length; j++) {
+      const sd = Math.abs(slotOf(ordered[i]) - slotOf(ordered[j])); present.add(Math.min(sd, 12 - sd));
+    }
+    linesRow = `<div class="info-row"><span class="ik">lines</span><span class="iv" style="white-space:normal;line-height:1.6">${[1,2,3,4,5,6].filter(d => present.has(d))
+      .map(d => `<span style="color:${IC_COLOR[d]}">━ ${IC_LABEL[d]}</span>`).join('&nbsp;&nbsp;')}</span></div>`;
+  }
+  document.getElementById('cof-info').innerHTML = `
+    <div class="info-row"><span class="ik">shape</span><span class="iv">${title}</span></div>${linesRow}
+    <div class="info-row"><span class="ik">notes</span><span class="iv">${shapeNotes || '—'}</span></div>
+    <div class="info-row"><span class="ik">scale</span><span class="iv">${notes.join('  ')}</span></div>
+    <div class="info-row"><span class="ik">chords</span><span class="iv">${chords.map((c,i)=> cofMode==='chord'&&i===cofDeg?`<b>${c}</b>`:c).join('<span style="opacity:.25"> · </span>')}</span></div>`;
+
+  // degree buttons
+  const dr = document.getElementById('degRow');
+  dr.style.display = cofMode === 'chord' ? 'flex' : 'none';
+  document.getElementById('sevRow').style.display = cofMode === 'chord' ? 'flex' : 'none';
+  if (cofMode === 'chord') {
+    dr.innerHTML = DEG_LBL.map((d,i) => `<button class="q-btn${i===cofDeg?' active':''}" onclick="setDeg(${i})">${d}<small>${chords[i]}</small></button>`).join('');
+  }
+  document.getElementById('cof-hint').textContent = cofMode === 'free'
+    ? 'リングの音をタップで選択／解除 ・ ドラッグで回転'
+    : '円盤をドラッグで回転 ／ キーをタップで12時へ';
+}
+function setDeg(i) { cofDeg = i; cofUpdate(); }
+function toggleAll() { cofAll = !cofAll; document.getElementById('allToggle').classList.toggle('on', cofAll); cofUpdate(); }
+function toggleSev() { cofSev = !cofSev; document.getElementById('sevToggle').classList.toggle('on', cofSev); cofUpdate(); }
+document.getElementById('modeRow').addEventListener('click', e => {
+  const b = e.target.closest('.q-btn'); if (!b) return;
+  document.querySelectorAll('#modeRow .q-btn').forEach(x => x.classList.remove('active'));
+  b.classList.add('active'); cofMode = b.dataset.m; cofUpdate();
+});
+
+/* ================================================================
    UPDATE & INIT
    ================================================================ */
 function update() { renderChips(); renderResults(findMatches()); }
 
-window.addEventListener('load',   () => { renderPiano(); update(); });
+window.addEventListener('load',   () => { renderPiano(); update(); buildCircle(); applyRot(); cofUpdate(); });
 window.addEventListener('resize', renderPiano);
 </script>
 
